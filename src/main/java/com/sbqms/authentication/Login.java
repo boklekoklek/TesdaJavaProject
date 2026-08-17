@@ -57,9 +57,9 @@ public class Login {
             return;
         }
 
-
+        // ============================================
         // CHECK TEACHER
-
+        // ============================================
 
         TeacherDAO teacherDAO =
                 new TeacherDAO(connection);
@@ -93,8 +93,9 @@ public class Login {
             return;
         }
 
+        // ============================================
         // CHECK STUDENT
-
+        // ============================================
 
         StudentDAO studentDAO =
                 new StudentDAO(connection);
@@ -128,9 +129,9 @@ public class Login {
             return;
         }
 
-
+        // ============================================
         // INVALID LOGIN
-
+        // ============================================
 
         System.out.println("||  Invalid email or password.");
         System.out.println("||");

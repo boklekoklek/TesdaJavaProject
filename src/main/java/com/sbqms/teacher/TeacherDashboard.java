@@ -8,12 +8,14 @@ import java.util.Scanner;
 
 import com.sbqms.dao.QuestionDAO;
 import com.sbqms.dao.QuizDAO;
+import com.sbqms.dao.StudentDAO;
 import com.sbqms.dao.StudentResultDAO;
 import com.sbqms.dao.TopicDAO;
 import com.sbqms.model.Question;
 import com.sbqms.model.Quiz;
 import com.sbqms.model.QuizStats;
 import com.sbqms.model.ResultReportRow;
+import com.sbqms.model.Student;
 import com.sbqms.model.Teacher;
 import com.sbqms.model.Topic;
 
@@ -38,8 +40,9 @@ public class TeacherDashboard {
             System.out.println("||  [3] Manage Questions                        ||");
             System.out.println("||  [4] Student Results                         ||");
             System.out.println("||  [5] Reports                                 ||");
-            System.out.println("||  [6] My Profile                              ||");
-            System.out.println("||  [7] Logout                                  ||");
+            System.out.println("||  [6] Manage Students                         ||");
+            System.out.println("||  [7] My Profile                              ||");
+            System.out.println("||  [8] Logout                                  ||");
             System.out.println("||                                              ||");
             System.out.println("==================================================");
 
@@ -70,10 +73,14 @@ public class TeacherDashboard {
                     break;
 
                 case "6":
-                    myProfile(teacher, scanner);
+                    manageStudents(scanner, connection);
                     break;
 
                 case "7":
+                    myProfile(teacher, scanner);
+                    break;
+
+                case "8":
                     running = false;
                     logout(scanner);
                     break;
@@ -879,6 +886,130 @@ public class TeacherDashboard {
         System.out.println("  Lowest Score:       " + stats.getLowestScore());
         System.out.println("  Passed:             " + stats.getPassCount());
         System.out.println("  Failed:             " + stats.getFailCount());
+
+        pause(scanner);
+    }
+
+    // ============================================
+    // [6] MANAGE STUDENTS
+    // ============================================
+
+    private static void manageStudents(Scanner scanner, Connection connection) {
+
+        boolean running = true;
+
+        while (running) {
+
+            clearScreen();
+
+            System.out.println("==================================================");
+            System.out.println("||                  S B Q M S                   ||");
+            System.out.println("||                                              ||");
+            System.out.println("||              M A N A G E                     ||");
+            System.out.println("||                S T U D E N T S               ||");
+            System.out.println("||                                              ||");
+            System.out.println("==================================================");
+            System.out.println();
+            System.out.println("[1] Add Student");
+            System.out.println("[2] View Students");
+            System.out.println("[3] Back");
+            System.out.print("Enter your choice: ");
+
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+
+                case "1":
+                    addStudent(scanner, connection);
+                    break;
+
+                case "2":
+                    viewStudents(scanner, connection);
+                    break;
+
+                case "3":
+                    running = false;
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+                    pause(scanner);
+            }
+        }
+    }
+
+    private static void addStudent(Scanner scanner, Connection connection) {
+
+        StudentDAO studentDAO = new StudentDAO(connection);
+
+        clearScreen();
+
+        System.out.println("==================================================");
+        System.out.println("||                A D D  S T U D E N T          ||");
+        System.out.println("==================================================");
+        System.out.println();
+
+        System.out.print("First Name: ");
+        String firstName = scanner.nextLine().trim();
+
+        System.out.print("Last Name: ");
+        String lastName = scanner.nextLine().trim();
+
+        System.out.print("Email: ");
+        String email = scanner.nextLine().trim();
+
+        System.out.print("Password: ");
+        String password = scanner.nextLine().trim();
+
+        System.out.print("Section: ");
+        String section = scanner.nextLine().trim();
+
+        int studentID = studentDAO.createStudent(
+                firstName, lastName, email, password, section
+        );
+
+        System.out.println();
+
+        if (studentID == -2) {
+            System.out.println("Could not add student: that email is already in use.");
+        } else if (studentID == -1) {
+            System.out.println("Could not add student. Please try again.");
+        } else {
+            System.out.println("Student added successfully! (Student ID: " + studentID + ")");
+        }
+
+        pause(scanner);
+    }
+
+    private static void viewStudents(Scanner scanner, Connection connection) {
+
+        StudentDAO studentDAO = new StudentDAO(connection);
+
+        clearScreen();
+
+        System.out.println("==================================================");
+        System.out.println("||               A L L  S T U D E N T S         ||");
+        System.out.println("==================================================");
+        System.out.println();
+
+        List<Student> students = studentDAO.getAllStudents();
+
+        if (students.isEmpty()) {
+
+            System.out.println("No students found.");
+
+        } else {
+
+            for (Student student : students) {
+
+                System.out.println(
+                        "ID " + student.getStudentID() + ": "
+                                + student.getFirstName() + " " + student.getLastName()
+                                + "  |  Section: " + student.getStudSect()
+                                + "  |  Email: " + student.getEmail()
+                );
+            }
+        }
 
         pause(scanner);
     }
