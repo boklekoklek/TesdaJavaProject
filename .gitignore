@@ -1,2 +1,14 @@
+# IntelliJ IDEA
 .idea/
-.idea/
+*.iml
+
+# Java compiled files
+*.class
+
+# Build/output folders
+bin/
+out/
+SBQMS/bin/
+
+# macOS
+.DS_Store
