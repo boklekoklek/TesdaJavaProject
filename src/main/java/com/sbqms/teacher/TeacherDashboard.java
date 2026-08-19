@@ -19,6 +19,18 @@ import com.sbqms.model.Student;
 import com.sbqms.model.Teacher;
 import com.sbqms.model.Topic;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 public class TeacherDashboard {
 
     public static void showDashboard(
@@ -36,7 +48,8 @@ public class TeacherDashboard {
 
             System.out.println("||                                              ||");
             System.out.println("||  [1] Create Quiz                             ||");
-            System.out.println("||  [2] Manage Quizzes                          ||");
+            System.out.println("||  [2] Manage Quizzes             " +
+                    "             ||");
             System.out.println("||  [3] Manage Questions                        ||");
             System.out.println("||  [4] Student Results                         ||");
             System.out.println("||  [5] Reports                                 ||");
@@ -386,43 +399,176 @@ public class TeacherDashboard {
             System.out.println("==================================================");
             System.out.println();
             System.out.println("[1] Add Question");
-            System.out.println("[2] View All Questions");
-            System.out.println("[3] Edit Question");
-            System.out.println("[4] Delete Question");
-            System.out.println("[5] Attach Question to Quiz");
-            System.out.println("[6] Remove Question from Quiz");
-            System.out.println("[7] Back");
+            System.out.println("[2] Add Batch Questions (Excel)");
+            System.out.println("[3] Download Question Template");
+            System.out.println("[4] View All Questions");
+            System.out.println("[5] Edit Question");
+            System.out.println("[6] Delete Question");
+            System.out.println("[7] Attach Question to Quiz");
+            System.out.println("[8] Remove Question from Quiz");
+            System.out.println("[9] Manage Topics");
+            System.out.println("[10] Back");
+            System.out.print("Enter your choice: ");
+
+            String choice = scanner.nextLine().trim();
+
+            switch (choice) {
+                case "1": addQuestion(scanner, connection); break;
+                case "2": addQuestionsFromExcel(scanner, connection); break;
+                case "3": downloadQuestionTemplate(scanner); break;
+                case "4": viewAllQuestions(scanner, connection); break;
+                case "5": editQuestion(scanner, connection); break;
+                case "6": deleteQuestion(scanner, connection); break;
+                case "7": attachQuestionToQuizMenu(scanner, connection); break;
+                case "8": removeQuestionFromQuizMenu(scanner, connection); break;
+                case "9": manageTopics(scanner, connection); break;
+                case "10":  running = false; break;
+                default: System.out.println("Invalid choice."); pause(scanner);
+            }
+            }
+        }
+
+    private static void manageTopics(Scanner scanner, Connection connection) {
+
+        TopicDAO topicDAO = new TopicDAO(connection);
+
+        boolean running = true;
+
+        while (running) {
+
+            clearScreen();
+
+            System.out.println("==================================================");
+            System.out.println("||              M A N A G E  T O P I C S        ||");
+            System.out.println("==================================================");
+            System.out.println();
+            System.out.println("[1] Add Topic");
+            System.out.println("[2] Edit Topic");
+            System.out.println("[3] View Topics");
+            System.out.println("[4] Delete Topic");
+            System.out.println("[5] Back");
             System.out.print("Enter your choice: ");
 
             String choice = scanner.nextLine().trim();
 
             switch (choice) {
 
-                case "1":
-                    addQuestion(scanner, connection);
-                    break;
+                case "1": {
+                    System.out.print("Topic Name: ");
+                    String topicName = scanner.nextLine().trim();
 
-                case "2":
-                    viewAllQuestions(scanner, connection);
-                    break;
+                    System.out.print("Description: ");
+                    String description = scanner.nextLine().trim();
 
-                case "3":
-                    editQuestion(scanner, connection);
-                    break;
+                    int topicID = topicDAO.createTopic(topicName, description);
 
-                case "4":
-                    deleteQuestion(scanner, connection);
-                    break;
+                    System.out.println();
+                    System.out.println(topicID == -1
+                            ? "Could not add the topic."
+                            : "Topic added successfully! (Topic ID: " + topicID + ")");
 
+                    pause(scanner);
+                    break;
+                }
+
+                case "2": {
+                    List<Topic> topics = topicDAO.getAllTopics();
+
+                    if (topics.isEmpty()) {
+                        System.out.println("No topics exist yet.");
+                        pause(scanner);
+                        break;
+                    }
+
+                    for (Topic t : topics) {
+                        System.out.println("ID " + t.getTopicID() + ": " + t.getTopicName()
+                                + " - " + t.getDescription());
+                    }
+
+                    System.out.print("Enter the Topic ID to edit: ");
+                    int topicID = readInt(scanner);
+
+                    Topic topic = topicDAO.getTopicById(topicID);
+
+                    if (topic == null) {
+                        System.out.println("Topic not found.");
+                        pause(scanner);
+                        break;
+                    }
+
+                    System.out.println("Leave a field blank to keep its current value.");
+
+                    System.out.println("Current name: " + topic.getTopicName());
+                    System.out.print("New name: ");
+                    String newName = readLineOrKeep(scanner, topic.getTopicName());
+
+                    System.out.println("Current description: " + topic.getDescription());
+                    System.out.print("New description: ");
+                    String newDescription = readLineOrKeep(scanner, topic.getDescription());
+
+                    boolean updated = topicDAO.updateTopic(topicID, newName, newDescription);
+
+                    System.out.println();
+                    System.out.println(updated ? "Topic updated." : "Could not update topic.");
+
+                    pause(scanner);
+                    break;
+                }
+
+                case "3": {
+                    List<Topic> topics = topicDAO.getAllTopics();
+
+                    if (topics.isEmpty()) {
+                        System.out.println("No topics exist yet.");
+                    } else {
+                        for (Topic t : topics) {
+                            System.out.println("ID " + t.getTopicID() + ": " + t.getTopicName()
+                                    + " - " + t.getDescription());
+                        }
+                    }
+
+                    pause(scanner);
+                    break;
+                }
+                case "4": {
+                    List<Topic> topics = topicDAO.getAllTopics();
+
+                    if (topics.isEmpty()) {
+                        System.out.println("No topics exist yet.");
+                        pause(scanner);
+                        break;
+                    }
+
+                    for (Topic t : topics) {
+                        System.out.println("ID " + t.getTopicID() + ": " + t.getTopicName());
+                    }
+
+                    System.out.print("Enter the Topic ID to delete: ");
+                    int topicID = readInt(scanner);
+
+                    System.out.print("Are you sure you want to delete this topic? (Y/N): ");
+                    String confirm = scanner.nextLine().trim().toUpperCase();
+
+                    if (confirm.equals("Y")) {
+
+                        boolean deleted = topicDAO.deleteTopic(topicID);
+
+                        if (deleted) {
+                            System.out.println("Topic deleted.");
+                        } else {
+                            System.out.println("Could not delete this topic — it still has");
+                            System.out.println("questions attached to it. Reassign or delete");
+                            System.out.println("those questions first.");
+                        }
+
+                    } else {
+                        System.out.println("Cancelled.");
+                    }
+
+                    pause(scanner);
+                    break;
+                }
                 case "5":
-                    attachQuestionToQuizMenu(scanner, connection);
-                    break;
-
-                case "6":
-                    removeQuestionFromQuizMenu(scanner, connection);
-                    break;
-
-                case "7":
                     running = false;
                     break;
 
@@ -432,7 +578,6 @@ public class TeacherDashboard {
             }
         }
     }
-
     private static void addQuestion(Scanner scanner, Connection connection) {
 
         TopicDAO topicDAO = new TopicDAO(connection);
@@ -532,7 +677,150 @@ public class TeacherDashboard {
 
         pause(scanner);
     }
+    // Template columns: TopicName | QuestionText | ChoiceA | ChoiceB | ChoiceC | ChoiceD
+//                   | CorrectChoice(A/B/C/D) | Difficulty(Easy/Medium/Hard)
+    private static void addQuestionsFromExcel(Scanner scanner, Connection connection) {
 
+        TopicDAO topicDAO = new TopicDAO(connection);
+        QuestionDAO questionDAO = new QuestionDAO(connection);
+
+        clearScreen();
+        System.out.println("==================================================");
+        System.out.println("||     A D D  B A T C H  Q U E S T I O N S      ||");
+        System.out.println("==================================================");
+        System.out.println();
+        System.out.println("File must follow the format from 'Download Question Template'.");
+        System.out.print("Enter the full path to the Excel file: ");
+        String path = scanner.nextLine().trim();
+
+        // topic name -> topicID, case-insensitive
+        Map<String, Integer> topicLookup = new HashMap<>();
+        for (Topic topic : topicDAO.getAllTopics()) {
+            topicLookup.put(topic.getTopicName().trim().toLowerCase(), topic.getTopicID());
+        }
+
+        int added = 0;
+        int skipped = 0;
+        DataFormatter formatter = new DataFormatter();
+
+        try (FileInputStream fis = new FileInputStream(path);
+             Workbook workbook = WorkbookFactory.create(fis)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // row 0 = header
+
+                Row row = sheet.getRow(i);
+                if (row == null) { continue; }
+
+                String topicName    = cellText(row, 0, formatter);
+                String questionText = cellText(row, 1, formatter);
+                String choiceA      = cellText(row, 2, formatter);
+                String choiceB      = cellText(row, 3, formatter);
+                String choiceC      = cellText(row, 4, formatter);
+                String choiceD      = cellText(row, 5, formatter);
+                String correctLtr   = cellText(row, 6, formatter);
+                String difficulty   = cellText(row, 7, formatter);
+
+                if (topicName.isEmpty() || questionText.isEmpty() || choiceA.isEmpty()
+                        || choiceB.isEmpty() || choiceC.isEmpty() || choiceD.isEmpty()
+                        || correctLtr.isEmpty() || difficulty.isEmpty()) {
+                    skipped++;
+                    continue;
+                }
+
+                Integer topicID = topicLookup.get(topicName.toLowerCase());
+                if (topicID == null) {
+                    skipped++;
+                    continue;
+                }
+
+                String correctAnswer;
+                switch (correctLtr.toUpperCase()) {
+                    case "A": correctAnswer = choiceA; break;
+                    case "B": correctAnswer = choiceB; break;
+                    case "C": correctAnswer = choiceC; break;
+                    case "D": correctAnswer = choiceD; break;
+                    default: skipped++; continue;
+                }
+
+                String normDifficulty;
+                if (difficulty.equalsIgnoreCase("Easy")) { normDifficulty = "Easy"; }
+                else if (difficulty.equalsIgnoreCase("Medium")) { normDifficulty = "Medium"; }
+                else if (difficulty.equalsIgnoreCase("Hard")) { normDifficulty = "Hard"; }
+                else { skipped++; continue; }
+
+                int newID = questionDAO.addQuestion(
+                        topicID, questionText, choiceA, choiceB, choiceC, choiceD,
+                        correctAnswer, normDifficulty
+                );
+
+                if (newID == -1) { skipped++; } else { added++; }
+            }
+
+        } catch (Exception e) {
+            System.out.println("Could not read that file: " + e.getMessage());
+            pause(scanner);
+            return;
+        }
+
+        System.out.println();
+        System.out.println("Import finished.");
+        System.out.println("  Added:   " + added);
+        System.out.println("  Skipped (invalid): " + skipped);
+        pause(scanner);
+    }
+
+    private static void downloadQuestionTemplate(Scanner scanner) {
+
+        clearScreen();
+        System.out.println("==================================================");
+        System.out.println("||        Q U E S T I O N  T E M P L A T E      ||");
+        System.out.println("==================================================");
+        System.out.println();
+
+        String fileName = "question_template.xlsx";
+        String[] headers = {
+                "TopicName", "QuestionText", "ChoiceA", "ChoiceB", "ChoiceC", "ChoiceD",
+                "CorrectChoice(A/B/C/D)", "Difficulty(Easy/Medium/Hard)"
+        };
+        String[] sample = {
+                "Java Basics", "What keyword creates a class?", "class", "object", "new", "void",
+                "A", "Easy"
+        };
+
+        try (Workbook workbook = new XSSFWorkbook();
+             FileOutputStream fos = new FileOutputStream(fileName)) {
+
+            Sheet sheet = workbook.createSheet("Questions");
+
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                headerRow.createCell(i).setCellValue(headers[i]);
+            }
+
+            Row sampleRow = sheet.createRow(1);
+            for (int i = 0; i < sample.length; i++) {
+                sampleRow.createCell(i).setCellValue(sample[i]);
+            }
+
+            workbook.write(fos);
+
+            System.out.println("Template saved to: " + new File(fileName).getAbsolutePath());
+            System.out.println("TopicName must exactly match an existing topic.");
+
+        } catch (Exception e) {
+            System.out.println("Could not create the template file.");
+        }
+
+        pause(scanner);
+    }
+
+    private static String cellText(Row row, int col, DataFormatter formatter) {
+        org.apache.poi.ss.usermodel.Cell cell = row.getCell(col);
+        if (cell == null) { return ""; }
+        return formatter.formatCellValue(cell).trim();
+    }
     private static void viewAllQuestions(Scanner scanner, Connection connection) {
 
         QuestionDAO questionDAO = new QuestionDAO(connection);

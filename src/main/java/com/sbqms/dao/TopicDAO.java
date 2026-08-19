@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.sql.Statement;
 import com.sbqms.model.Topic;
 
 public class TopicDAO {
@@ -63,5 +63,69 @@ public class TopicDAO {
         }
 
         return null;
+    }
+
+    public int createTopic(String topicName, String description) {
+
+        String sql = "INSERT INTO Topic (topicName, description) VALUES (?, ?)";
+
+        try {
+            PreparedStatement statement = connection.prepareStatement(
+                    sql, Statement.RETURN_GENERATED_KEYS
+            );
+
+            statement.setString(1, topicName);
+            statement.setString(2, description);
+
+            int rows = statement.executeUpdate();
+
+            if (rows > 0) {
+                ResultSet keys = statement.getGeneratedKeys();
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    public boolean updateTopic(int topicID, String topicName, String description) {
+
+        String sql = "UPDATE Topic SET topicName = ?, description = ? WHERE topicID = ?";
+
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+
+            statement.setString(1, topicName);
+            statement.setString(2, description);
+            statement.setInt(3, topicID);
+
+            return statement.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+
+    public boolean deleteTopic(int topicID) {
+
+        String sql = "DELETE FROM Topic WHERE topicID = ?";
+
+        try {
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, topicID);
+
+            return statement.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

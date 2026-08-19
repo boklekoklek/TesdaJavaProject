@@ -155,9 +155,7 @@ public class QuizDAO {
         return false;
     }
 
-    // Returns true if deleted. Returns false (and prints a friendly message)
-    // if the quiz cannot be deleted because it already has related records
-    // (questions attached, or student attempts) due to foreign key constraints.
+
     public boolean deleteQuiz(int quizID) {
 
         String sql = "DELETE FROM Quiz WHERE quizID = ?";
